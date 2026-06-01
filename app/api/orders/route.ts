@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase";
 import { requireApiKey } from "@/lib/auth";
-import { checkPickupAvailability } from "@/lib/availability";
+import { checkPickupAvailability, weekdayOf } from "@/lib/availability";
+import { sendTelegramMessage } from "@/lib/telegram";
 
 const orderSchema = z.object({
   customer_id: z.string().uuid(),
@@ -17,6 +18,46 @@ const orderSchema = z.object({
     )
     .min(1),
 });
+
+async function sendConfirmation(
+  customerId: string,
+  order: { id: string; pickup_date: string; pickup_slot: string; total_cents: number },
+  items: { menu_item_id: string; qty: number }[],
+  menuItems: { id: string; name: string }[]
+): Promise<void> {
+  const { data: customer } = await supabaseAdmin
+    .from("customers")
+    .select("telegram_chat_id, display_name")
+    .eq("id", customerId)
+    .single();
+
+  if (!customer?.telegram_chat_id) return;
+
+  const { data: location } = await supabaseAdmin
+    .from("locations")
+    .select("name, address")
+    .eq("weekday", weekdayOf(order.pickup_date))
+    .single();
+
+  const nameMap = new Map(menuItems.map((m) => [m.id, m.name]));
+  const itemLines = items
+    .map((it) => `– ${nameMap.get(it.menu_item_id) ?? it.menu_item_id} ×${it.qty}`)
+    .join("\n");
+
+  const euros = (order.total_cents / 100).toFixed(2).replace(".", ",");
+  const locLine = location ? `\n📍 ${location.name}\n🗺 ${location.address}` : "";
+  const greeting = customer.display_name ? `Bonjour ${customer.display_name} !` : "Bonjour !";
+
+  const message =
+    `✅ <b>Commande confirmée – Petit Camion</b>\n\n` +
+    `${greeting} Votre commande a bien été enregistrée.\n\n` +
+    `🛍 <b>Votre commande :</b>\n${itemLines}\n\n` +
+    `💰 Total : ${euros} €${locLine}\n` +
+    `🕛 Retrait le ${order.pickup_date} à ${order.pickup_slot}\n\n` +
+    `À tout à l'heure !`;
+
+  await sendTelegramMessage(String(customer.telegram_chat_id), message);
+}
 
 export async function POST(request: Request) {
   const authError = requireApiKey(request);
@@ -68,6 +109,9 @@ export async function POST(request: Request) {
   if (insertError) {
     return NextResponse.json({ error: insertError.message }, { status: 500 });
   }
+
+  // Fire-and-forget : une erreur Telegram ne doit pas faire échouer la réponse
+  sendConfirmation(customer_id, order, items, availability.menuItems).catch(() => {});
 
   return NextResponse.json(order, { status: 201 });
 }

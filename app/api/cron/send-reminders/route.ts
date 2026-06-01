@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { fromZonedTime } from "date-fns-tz";
 import { supabaseAdmin } from "@/lib/supabase";
 import { weekdayOf } from "@/lib/availability";
+import { sendTelegramMessage } from "@/lib/telegram";
 
 const TZ = "America/Guadeloupe";
-const TELEGRAM_API = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}`;
 
 type OrderRow = {
   id: string;
@@ -29,17 +29,6 @@ async function fetchLocation(weekday: number): Promise<LocationRow | null> {
   return data as LocationRow;
 }
 
-async function sendTelegramMessage(chatId: string, text: string): Promise<void> {
-  const res = await fetch(`${TELEGRAM_API}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
-  });
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Telegram ${res.status}: ${body}`);
-  }
-}
 
 export async function POST(request: Request) {
   const authHeader = request.headers.get("authorization");
