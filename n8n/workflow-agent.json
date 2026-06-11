@@ -1,0 +1,349 @@
+{
+  "name": "Petit Camion",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a9db3485-adf0-43b2-ab76-5ee983ecaf01",
+      "name": "Telegram Trigger",
+      "webhookId": "41bb8ace-332a-4817-8948-eb42bff4f5d4",
+      "credentials": {
+        "telegramApi": {
+          "id": "I73MF9BESzHS9nXj",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://petit-camion.vercel.app/api/customers",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "telegram_chat_id",
+              "value": "={{ $json.message.chat.id }}"
+            },
+            {
+              "name": "display_name",
+              "value": "={{ $json.message.from.first_name }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "3ffa95a2-fbbb-47f7-b738-df0854b11e86",
+      "name": "Customer",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "6098f4pSrOFNnWJb",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Telegram Trigger').item.json.message.text }}",
+        "options": {
+          "systemMessage": "=Tu es l'assistant de commande du food truck \"Le Petit Camion\" (Guadeloupe).\n\nCONTEXTE\nDate et heure actuelles (Guadeloupe) : {{ $now.setZone('America/Guadeloupe').toFormat('yyyy-MM-dd HH:mm') }}, {{ $now.setZone('America/Guadeloupe').setLocale('fr').toFormat('cccc') }}.\ncustomer_id du client : {{ $('Customer').item.json.id}}\n\nRÔLE\nAider le client à passer sa commande en posant les bonnes questions et en confirmant chaque étape via tes outils.\n\nOUTILS\n- get_menu : liste des plats, prix (price_cents = centimes) et quotas.\n- check_availability : vérifie une date (ouvert, cutoff 11h, stock) et renvoie créneaux + stock restant.\n- create_order : crée la commande en base. UNIQUEMENT après confirmation explicite du client.\n\nPROCÉDURE OBLIGATOIRE\n1. Si tu ne connais pas le menu, appelle get_menu.\n2. Quand le client donne une date (\"demain\", \"mardi\", \"le 7\"), convertis-la en date ISO YYYY-MM-DD à partir de la date actuelle ci-dessus, puis appelle check_availability avec cette date ET les items voulus. Ne décide JAMAIS toi-même qu'une date est valide.\n3. Si check_availability renvoie valid:false, annonce le motif au client avec tes mots et propose suggested_date.\n4. Confirme TOUS les détails avant create_order : date, créneau, items, total. N'appelle create_order qu'après un OUI explicite.\n5. Après create_order, donne : numéro de commande, lieu + adresse (depuis check_availability), créneau, et précise qu'un rappel partira 15 min avant.\n\nINTERDICTIONS\n- Ne JAMAIS inventer un plat, un prix, une dispo, une adresse, un créneau.\n- Ne JAMAIS affirmer qu'une date est valide sans l'avoir vérifiée via check_availability.\n- Ne JAMAIS supposer le cutoff : c'est l'outil qui décide.\n- Respecte TOUJOURS la réponse de check_availability, même si tu crois connaître la bonne réponse.\n- Pour items (check_availability et create_order), utilise TOUJOURS le champ id (UUID) EXACT renvoyé par get_menu. JAMAIS le nom du plat ni une abréviation. Si tu n'as pas appelé get_menu dans cette conversation, appelle-le d'abord pour récupérer les id.\n\nTON\nAmical, tutoiement, concis (1 à 3 phrases, sauf le récap final). Ne décris pas tes étapes techniques au client : il ne doit pas savoir que tu appelles des outils. Affiche les prix en euros (price_cents ÷ 100).\nNUMÉRO DE COMMANDE (affichage client) :\nAprès create_order, le numéro à donner au client est le champ \"order_number\" de la réponse (un nombre court, ex : 42).\nAffiche-le sous la forme : commande #42.\nN'affiche JAMAIS le champ \"id\" : c'est un identifiant technique long et illisible. Le client ne doit jamais le voir.\nFORMAT DES MESSAGES TELEGRAM :\nÉcris en petits paragraphes courts, séparés par une ligne vide.\n1 à 3 phrases maximum par paragraphe. Jamais de gros bloc de texte compact.\nExemple de mise en forme attendue pour une confirmation :\n\nC'est noté, ta commande #42 est confirmée.\n\n📍 Marché Saint-Jean, 15 rue des Halles.\n\n🕧 Retrait mardi à 12h30\n\nJe t'envoie un rappel 15 min avant. Bon appétit !\nCONTENU DE LA CONFIRMATION FINALE (après create_order) :\nTon message de confirmation doit TOUJOURS contenir, en petits paragraphes :\n1. Le numéro : \"Commande #<order_number> confirmée.\"\n2. Le récapitulatif des plats avec quantités (ex : 2 burgers, 1 frites).\n3. Le prix total en euros, calculé depuis le champ total_cents renvoyé par create_order (total_cents divisé par 100). N'invente JAMAIS le prix : utilise uniquement total_cents.\n4. Le lieu de retrait avec son adresse.\n5. Le jour et le créneau (ex : mardi à 12h30).\n6. La mention qu'un rappel partira 15 min avant.\n\nExemple :\n\nC'est noté, ta commande #42 est confirmée.\n\n🛍 2 burgers + 1 frites — total 20 €.\n\n📍 Marché Saint-Jean, 15 rue des Halles.\n\n🕧 Retrait mardi à 12h30.\n\nJe t'envoie un rappel 15 min avant. Bon appétit !\nRÈGLES SUPPLÉMENTAIRES :\n\n- Mets en petits paragraphes (ligne vide entre chaque) TOUS tes messages : la question du créneau, le récap, la confirmation. Pas seulement la confirmation finale.\n\n- Pour un prix, affiche UNIQUEMENT le montant final (ex : \"total 20 €\"). Ne montre JAMAIS le détail du calcul (jamais de \"2 x 8 + 4\"). Après create_order, le total vient du champ total_cents (÷100).\n\n- Chaque nouvelle commande repart de zéro : redemande toujours le créneau pour la commande en cours. N'utilise JAMAIS un créneau ou un choix venant d'un échange précédent.\n\nExemple de question de créneau bien formatée :\n\nDemain midi, c'est bon !\n\nTu veux récupérer à quelle heure ? Créneaux : 12h00, 12h15, 12h30, 12h45, 13h00, 13h15, 13h30, 13h45."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "bd573eed-2e4e-40fd-b257-660934f849c5",
+      "name": "AI Agent",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        288,
+        208
+      ],
+      "id": "b624407d-af32-4804-a008-d98d6357c3ea",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "PaZFWdxWPMBniphz",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Renvoie la liste des plats actifs avec id, nom, prix (price_cents) et quota journalier. Appeler pour connaître le menu et les prix.",
+        "url": "https://petit-camion.vercel.app/api/menu",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        576,
+        208
+      ],
+      "id": "b1f2dc22-b067-42ce-8bfd-fe134dd4e87a",
+      "name": "get_menu",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "6098f4pSrOFNnWJb",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Vérifie si une date est commandable (ouvert, cutoff 11h heure Guadeloupe, stock) et renvoie les créneaux dispo + le stock restant par plat. Appeler dès qu'une date et un panier sont connus, avant toute confirmation. Si la date ne convient pas, renvoie valid:false avec un motif (code) et une suggested_date.",
+        "url": "https://petit-camion.vercel.app/api/pickup-availability",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "date",
+              "value": "={{ $fromAI('date', 'date de retrait au format YYYY-MM-DD') }}"
+            },
+            {
+              "name": "items",
+              "value": "={{ $fromAI('items', 'plats au format ID:quantité séparés par virgules. ID = le champ id (UUID) EXACT de get_menu, jamais le nom. Exemple: a255a5a3-a53e-4599-b2bd-fc205d237b5c:2') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        848,
+        208
+      ],
+      "id": "2ce43b46-8040-4db4-9641-3269fb37fe20",
+      "name": "check_availability",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "6098f4pSrOFNnWJb",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Crée la commande en base. À appeler UNIQUEMENT après confirmation explicite du client (date, créneau, items et total validés). Renvoie la commande créée.",
+        "method": "POST",
+        "url": "https://petit-camion.vercel.app/api/orders",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "customer_id",
+              "value": "={{ $('Customer').item.json.id }}"
+            },
+            {
+              "name": "pickup_date",
+              "value": "={{ $fromAI('pickup_date', 'date de retrait au format YYYY-MM-DD') }}"
+            },
+            {
+              "name": "pickup_slot",
+              "value": "={{ $fromAI('pickup_slot', 'créneau au format 24h HH:MM, ex 12:30. Jamais 12h30.') }}"
+            },
+            {
+              "name": "items",
+              "value": "={{ $fromAI('items', 'tableau des plats: [{\"menu_item_id\":\"<id UUID exact de get_menu>\",\"qty\":<nombre>}]', 'json') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        704,
+        208
+      ],
+      "id": "0fe4846d-d6eb-4d25-83d0-14b0c0fe4abf",
+      "name": "create_order",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "6098f4pSrOFNnWJb",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        432,
+        208
+      ],
+      "id": "aa97c97b-923d-4978-9e60-541937ddbfc2",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        784,
+        0
+      ],
+      "id": "dd030042-6440-4ba8-abe7-1c9d1dc94458",
+      "name": "Telegram pong",
+      "webhookId": "f4581035-b4c7-4f93-990c-30f2f225a004",
+      "credentials": {
+        "telegramApi": {
+          "id": "I73MF9BESzHS9nXj",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Customer": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Telegram pong",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_menu": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check_availability": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_order": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "35aa713c-a404-418f-80f4-8e808ca9a92f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7620f1cf31c1fee159530447c235455add4b8ec06e1175a5d2b60bf870414ed3"
+  },
+  "nodeGroups": [],
+  "id": "gWv4x4U0CyWK0aFY",
+  "tags": []
+}
