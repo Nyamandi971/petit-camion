@@ -16,7 +16,8 @@ type OrderRow = {
 type LocationRow = { name: string; address: string };
 
 function pickupUtc(date: string, slot: string): Date {
-  return fromZonedTime(`${date}T${slot}:00`, TZ);
+  const hhmm = slot.slice(0, 5); // "10:37:00" -> "10:37"
+  return fromZonedTime(`${date}T${hhmm}:00`, TZ);
 }
 
 async function fetchLocation(weekday: number): Promise<LocationRow | null> {
