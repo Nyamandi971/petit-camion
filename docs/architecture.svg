@@ -1,0 +1,115 @@
+<svg viewBox="0 0 1000 720" xmlns="http://www.w3.org/2000/svg" font-family="'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#555"/>
+    </marker>
+    <style>
+      .box { rx: 12; ry: 12; stroke-width: 2; }
+      .title { font-size: 15px; font-weight: 700; }
+      .sub { font-size: 11px; fill: #444; }
+      .lbl { font-size: 11px; fill: #555; font-style: italic; }
+      .flow { stroke: #555; stroke-width: 1.8; fill: none; }
+      .zone { font-size: 12px; font-weight: 700; fill: #888; letter-spacing: 1px; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1000" height="720" fill="#fafafa"/>
+  <text x="500" y="38" text-anchor="middle" font-size="24" font-weight="800" fill="#e8590c">Le Petit Camion — Architecture</text>
+  <text x="500" y="60" text-anchor="middle" font-size="13" fill="#888">Système conversationnel de commande · 100 % free tier</text>
+
+  <!-- Client Telegram -->
+  <rect class="box" x="40" y="120" width="170" height="90" fill="#e7f5ff" stroke="#4dabf7"/>
+  <text class="title" x="125" y="152" text-anchor="middle" fill="#1864ab">📱 Client Telegram</text>
+  <text class="sub" x="125" y="174" text-anchor="middle">Le client commande</text>
+  <text class="sub" x="125" y="190" text-anchor="middle">en langage naturel</text>
+
+  <!-- Telegram Bot API -->
+  <rect class="box" x="40" y="280" width="170" height="80" fill="#e7f5ff" stroke="#4dabf7"/>
+  <text class="title" x="125" y="312" text-anchor="middle" fill="#1864ab">Telegram Bot API</text>
+  <text class="sub" x="125" y="334" text-anchor="middle">@Petitcamion_gpe_bot</text>
+
+  <!-- n8n Cloud zone -->
+  <rect x="280" y="100" width="340" height="400" rx="14" fill="#f3f0ff" stroke="#9775fa" stroke-width="2" stroke-dasharray="6 4"/>
+  <text class="zone" x="300" y="124" fill="#7048e8">n8n CLOUD · ORCHESTRATION</text>
+
+  <!-- Workflow Agent -->
+  <rect class="box" x="300" y="140" width="300" height="180" fill="#ffffff" stroke="#9775fa"/>
+  <text class="title" x="450" y="166" text-anchor="middle" fill="#5f3dc4">Workflow 1 — Agent</text>
+  <rect x="320" y="182" width="260" height="26" rx="6" fill="#f3f0ff"/>
+  <text class="sub" x="330" y="199">Telegram Trigger</text>
+  <rect x="320" y="214" width="260" height="26" rx="6" fill="#f3f0ff"/>
+  <text class="sub" x="330" y="231">HTTP → POST /api/customers</text>
+  <rect x="320" y="246" width="260" height="26" rx="6" fill="#fff0e6"/>
+  <text class="sub" x="330" y="263" fill="#d9480f" font-weight="700">AI Agent + mémoire (3 outils)</text>
+  <rect x="320" y="278" width="260" height="26" rx="6" fill="#f3f0ff"/>
+  <text class="sub" x="330" y="295">Telegram Send Message</text>
+
+  <!-- Workflow Rappels -->
+  <rect class="box" x="300" y="340" width="300" height="140" fill="#ffffff" stroke="#9775fa"/>
+  <text class="title" x="450" y="366" text-anchor="middle" fill="#5f3dc4">Workflow 2 — Rappels</text>
+  <rect x="320" y="382" width="260" height="26" rx="6" fill="#f3f0ff"/>
+  <text class="sub" x="330" y="399">Schedule Trigger (toutes les 5 min)</text>
+  <rect x="320" y="414" width="260" height="26" rx="6" fill="#f3f0ff"/>
+  <text class="sub" x="330" y="431">HTTP → POST /api/cron/send-reminders</text>
+  <text class="lbl" x="450" y="462" text-anchor="middle">contourne la limite cron du plan Vercel Hobby</text>
+
+  <!-- Groq -->
+  <rect class="box" x="690" y="140" width="270" height="90" fill="#fff0e6" stroke="#ff922b"/>
+  <text class="title" x="825" y="172" text-anchor="middle" fill="#d9480f">🧠 Groq — LLM</text>
+  <text class="sub" x="825" y="194" text-anchor="middle">Llama 3.3 70B · tool use</text>
+  <text class="sub" x="825" y="210" text-anchor="middle">comprend, décide quel outil appeler</text>
+
+  <!-- Next.js / Vercel -->
+  <rect x="690" y="270" width="270" height="230" rx="14" fill="#ebfbee" stroke="#40c057" stroke-width="2" stroke-dasharray="6 4"/>
+  <text class="zone" x="710" y="294" fill="#2f9e44">NEXT.js · VERCEL</text>
+
+  <rect class="box" x="710" y="306" width="230" height="120" fill="#ffffff" stroke="#40c057"/>
+  <text class="title" x="825" y="330" text-anchor="middle" fill="#2b8a3e">API REST</text>
+  <text class="sub" x="825" y="350" text-anchor="middle">/api/menu</text>
+  <text class="sub" x="825" y="366" text-anchor="middle">/api/customers</text>
+  <text class="sub" x="825" y="382" text-anchor="middle">/api/pickup-availability</text>
+  <text class="sub" x="825" y="398" text-anchor="middle">/api/orders</text>
+  <text class="sub" x="825" y="414" text-anchor="middle">/api/cron/send-reminders</text>
+
+  <rect class="box" x="710" y="436" width="230" height="48" fill="#ffffff" stroke="#40c057"/>
+  <text class="title" x="825" y="458" text-anchor="middle" fill="#2b8a3e">Interface admin</text>
+  <text class="sub" x="825" y="474" text-anchor="middle">dashboard, commandes, menu, planning</text>
+
+  <!-- Supabase -->
+  <rect class="box" x="360" y="560" width="500" height="110" fill="#e6fcf5" stroke="#0ca678"/>
+  <text class="title" x="610" y="588" text-anchor="middle" fill="#087f5b">🗄 Supabase — PostgreSQL</text>
+  <text class="sub" x="610" y="612" text-anchor="middle">5 tables : customers · locations · menu_items · orders · reminders</text>
+  <text class="sub" x="610" y="632" text-anchor="middle">règles métier déterministes : fermé dimanche · cutoff 11h · quotas · créneaux</text>
+  <text class="lbl" x="610" y="654" text-anchor="middle">fuseau America/Guadeloupe</text>
+
+  <!-- FLOWS -->
+  <!-- client <-> bot api -->
+  <line class="flow" x1="125" y1="210" x2="125" y2="278" marker-end="url(#arrow)"/>
+  <line class="flow" x1="150" y1="280" x2="150" y2="212" marker-end="url(#arrow)"/>
+  <text class="lbl" x="60" y="250">message ↕ réponse</text>
+
+  <!-- bot api -> n8n agent -->
+  <line class="flow" x1="210" y1="300" x2="298" y2="230" marker-end="url(#arrow)"/>
+  <text class="lbl" x="212" y="258">webhook</text>
+
+  <!-- agent <-> groq -->
+  <line class="flow" x1="600" y1="250" x2="688" y2="200" marker-end="url(#arrow)"/>
+  <line class="flow" x1="688" y1="215" x2="600" y2="270" marker-end="url(#arrow)"/>
+  <text class="lbl" x="612" y="235">raisonnement</text>
+
+  <!-- agent -> API (tool calls) -->
+  <line class="flow" x1="600" y1="262" x2="708" y2="360" marker-end="url(#arrow)"/>
+  <text class="lbl" x="612" y="330">appels d'outils</text>
+
+  <!-- rappels -> API -->
+  <line class="flow" x1="600" y1="427" x2="708" y2="410" marker-end="url(#arrow)"/>
+
+  <!-- API <-> Supabase -->
+  <line class="flow" x1="800" y1="500" x2="760" y2="558" marker-end="url(#arrow)"/>
+  <line class="flow" x1="740" y1="558" x2="780" y2="500" marker-end="url(#arrow)"/>
+  <text class="lbl" x="772" y="535" text-anchor="middle">SQL</text>
+
+  <!-- send-reminders -> bot api (rappel) -->
+  <path class="flow" d="M 710 478 Q 240 540 150 360" marker-end="url(#arrow)"/>
+  <text class="lbl" x="300" y="528">rappel 15 min avant le créneau</text>
+</svg>
