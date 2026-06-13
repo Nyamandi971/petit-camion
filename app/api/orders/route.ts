@@ -4,6 +4,11 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { requireApiKey } from "@/lib/auth";
 import { checkPickupAvailability, weekdayOf } from "@/lib/availability";
 import { sendTelegramMessage } from "@/lib/telegram";
+import { stripe } from "@/lib/stripe";
+
+export const runtime = "nodejs";
+
+const BOT_URL = "https://t.me/Petitcamion_gpe_bot";
 
 const orderSchema = z.object({
   customer_id: z.string().uuid(),
@@ -95,6 +100,7 @@ export async function POST(request: Request) {
   }
 
   const priceMap = new Map(availability.menuItems.map((m) => [m.id, m.price_cents]));
+  const nameMap = new Map(availability.menuItems.map((m) => [m.id, m.name]));
   const total_cents = items.reduce((sum, it) => {
     const price = priceMap.get(it.menu_item_id) ?? 0;
     return sum + price * it.qty;
@@ -110,8 +116,30 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: insertError.message }, { status: 500 });
   }
 
-  // Fire-and-forget : une erreur Telegram ne doit pas faire échouer la réponse
+  // Session de paiement Stripe
+  let payment_url: string | null = null;
+  try {
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      line_items: items.map((it) => ({
+        quantity: it.qty,
+        price_data: {
+          currency: "eur",
+          unit_amount: priceMap.get(it.menu_item_id) ?? 0,
+          product_data: { name: nameMap.get(it.menu_item_id) ?? "Plat" },
+        },
+      })),
+      success_url: BOT_URL,
+      cancel_url: BOT_URL,
+      metadata: { order_id: order.id },
+    });
+    payment_url = session.url;
+  } catch (err) {
+    return NextResponse.json({ error: "Stripe: " + (err as Error).message }, { status: 500 });
+  }
+
+  // Fire-and-forget (sera déplacé vers le webhook à l'étape 4)
   sendConfirmation(customer_id, order, items, availability.menuItems).catch(() => {});
 
-  return NextResponse.json(order, { status: 201 });
+  return NextResponse.json({ ...order, payment_url }, { status: 201 });
 }
