@@ -7,6 +7,7 @@ import { stripe } from "@/lib/stripe";
 
 export const runtime = "nodejs";
 
+const SITE_URL = "https://petit-camion.vercel.app";
 const BOT_URL = "https://t.me/Petitcamion_gpe_bot";
 
 const orderSchema = z.object({
@@ -91,7 +92,14 @@ export async function POST(request: Request) {
       cancel_url: BOT_URL,
       metadata: { order_id: order.id },
     });
-    payment_url = session.url;
+
+    // on stocke la longue URL Stripe et on renvoie un lien court
+    await supabaseAdmin
+      .from("orders")
+      .update({ stripe_checkout_url: session.url })
+      .eq("id", order.id);
+
+    payment_url = `${SITE_URL}/p/${order.order_number}`;
   } catch (err) {
     return NextResponse.json({ error: "Stripe: " + (err as Error).message }, { status: 500 });
   }
